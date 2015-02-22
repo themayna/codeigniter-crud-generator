@@ -5,7 +5,7 @@ This is a module that will create a crud for your table in Codeigniter hmvc.
 
 All you need to do is:
 
-    - Setup your database(config/databse.php),
+    - Setup your database(config/database.php),
     - Set an encryption key(config/config.php)->['encryption_key'] ='Whatever';
 
 
@@ -22,3 +22,6 @@ This script will work only in HMVC CODEIGNITER
 				edit.php
 				index.php
 				view.php
+
+
+Donations-paypal mainerici.angel@gmail.com
