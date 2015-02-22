@@ -83,7 +83,7 @@ class Crud extends MX_Controller {
 	}
 
 
-	public function generate_controller($primary_key, $table, $fields) {
+	protected function generate_controller($primary_key, $table, $fields) {
 		$controller_code = "<?php if (!defined('BASEPATH')) exit('No direct script access allowed');
 class " . ucfirst($table) . " extends MY_Controller{
 
@@ -177,7 +177,7 @@ class " . ucfirst($table) . " extends MY_Controller{
 	}
 
 
-	public function generate_model($primary_key, $table) {
+	protected function generate_model($primary_key, $table) {
 
 
 		$model_code = "
@@ -199,7 +199,7 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 	}
 
-	public function generate_index_view($primary_key, $table, $fields) {
+	protected function generate_index_view($primary_key, $table, $fields) {
 
 		$index_view_code = "<?php echo \$this->session->flashdata('msg');?>
 <h3>" . $table . "</h3>
@@ -268,7 +268,7 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 	}
 
-	public function generate_add_view($primary_key, $table, $fields) {
+	protected function generate_add_view($primary_key, $table, $fields) {
 
 		$add_view_code = "
 <h3>Add " . $table . "</h3>
@@ -297,7 +297,7 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 	}
 
-	public function generate_view_view($primary_key, $table, $fields) {
+	protected function generate_view_view($primary_key, $table, $fields) {
 
 		$view_view_code = "<h3>" . $table . "</h3>
 
@@ -316,7 +316,7 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 	}
 
-	public function generate_edit_view($primary_key, $table, $fields) {
+	protected function generate_edit_view($primary_key, $table, $fields) {
 
 		$edit_view_code = "
 <h3>Add " . $table . "</h3>
