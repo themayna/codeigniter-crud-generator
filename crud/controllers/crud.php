@@ -35,6 +35,9 @@ class Crud extends MX_Controller {
 					$primary_key = $field->name;
 				}
 			}
+//			echo '<pre>';
+//			var_dump($fields);
+//			die;
 			if (!isset($primary_key)) {
 				$this->session->set_flashdata('crud', 'Your tables does not have a primary key');
 				redirect(base_url('crud/index'));
@@ -107,15 +110,33 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 
 		public function add(){\n";
-
+//set some basic validation rules
 		foreach ($fields as $field) {
-			if ($field->primary_key != '1') {
-				$controller_code .= "\t\t\t\$this->form_validation->set_rules('" . $field->name . "', '" . ucfirst($field->name) . "', 'required');\n";
+			if ($field->primary_key != '1' && $field->name != 'created' && $field->name != 'modified') {
+				if ($field->type == 'int') {
+					$controller_code .= "\t\t\t\$this->form_validation->set_rules('" . $field->name . "', '" . ucfirst($field->name) . "', 'required|numeric');\n";
+				} else {
+					if ($field->name == 'email') {
+						$controller_code .= "\t\t\t\$this->form_validation->set_rules('" . $field->name . "', '" . ucfirst($field->name) . "', 'required|valid_email');\n";
+					} else {
+						$controller_code .= "\t\t\t\$this->form_validation->set_rules('" . $field->name . "', '" . ucfirst($field->name) . "', 'required');\n";
+					}
+				}
 			}
-
 		};
 		$controller_code .= "
-			if(\$this->form_validation->run()){
+			if(\$this->form_validation->run()){\n";
+		//check for created field in db
+		foreach ($fields as $field) {
+			if ($field->name == 'created') {
+				$controller_code .= "\t\t\t\$_POST['created'] = time();\n";
+			} elseif ($field->name == 'modified') {
+				$controller_code .= "\t\t\t\$_POST['modified'] = 0;\n";
+
+			}
+		}
+
+		$controller_code .= "
 				\$insert = \$this->db->insert('" . $table . "',\$_POST);
 
 				if(!empty(\$insert)){
@@ -135,16 +156,32 @@ class " . ucfirst($table) . " extends MY_Controller{
 
 		public function edit(\$id){
 			\$data['data'] = \$this->db->get_where('" . $table . "',array('" . $primary_key . "'=>\$id))->row();\n\n";
+//some basic validations
 		foreach ($fields as $field) {
-			if ($field->primary_key != '1') {
-				$controller_code .= "\t\t\t\$this->form_validation->set_rules('" . $field->name . "', '" . ucfirst($field->name) . "', 'required');\n";
+			if ($field->primary_key != '1' && $field->name != 'created' && $field->name != 'modified') {
+				if ($field->type == 'int') {
+					$controller_code .= "\t\t\t\$this->form_validation->set_rules('" . $field->name . "', '" . ucfirst($field->name) . "', 'required|numeric');\n";
+				} else {
+					if ($field->name == 'email') {
+						$controller_code .= "\t\t\t\$this->form_validation->set_rules('" . $field->name . "', '" . ucfirst($field->name) . "', 'required|valid_email');\n";
+					} else {
+						$controller_code .= "\t\t\t\$this->form_validation->set_rules('" . $field->name . "', '" . ucfirst($field->name) . "', 'required');\n";
+					}
+				}
 			}
-
-		};
+		}
 
 		$controller_code .= "
-			if(\$this->form_validation->run()){
-					\$this->db->where('" . $primary_key . "',\$id);
+			if(\$this->form_validation->run()){\n";
+
+		//check for created field in db
+		foreach ($fields as $field) {
+			if ($field->name == 'modified') {
+				$controller_code .= "\t\t\t\$_POST['modified'] = time();\n\n";
+			}
+		}
+
+		$controller_code .= "\t\t\t\$this->db->where('" . $primary_key . "',\$id);
 					\$insert = \$this->db->update('" . $table . "',\$_POST);
 
 					if(!empty(\$insert)){
@@ -160,14 +197,14 @@ class " . ucfirst($table) . " extends MY_Controller{
 		public function delete(\$id){
 			if(\$this->db->delete('" . $table . "',array('" . $primary_key . "'=>\$id))){
 				\$this->session->set_flashdata('msg','Entry deleted succesfuly');
-				redirect(base_url('".$table."/index'));
+				redirect(base_url('" . $table . "/index'));
 			}
 		}
 }
 
 			";
 
-		//create and populate the controller
+//create and populate the controller
 		$controller = 'application/modules/' . $table . '/controllers/' . $table . '.php';
 		if (!write_file($controller, $controller_code)) {
 			return false;
@@ -177,7 +214,9 @@ class " . ucfirst($table) . " extends MY_Controller{
 	}
 
 
-	protected function generate_model($primary_key, $table) {
+	protected
+	function generate_model(
+		$primary_key, $table) {
 
 
 		$model_code = "
@@ -199,7 +238,9 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 	}
 
-	protected function generate_index_view($primary_key, $table, $fields) {
+	protected
+	function generate_index_view(
+		$primary_key, $table, $fields) {
 
 		$index_view_code = "<?php echo \$this->session->flashdata('msg');?>
 <h3>" . $table . "</h3>
@@ -227,14 +268,27 @@ class " . ucfirst($table) . " extends MY_Controller{
 ";
 		foreach ($fields as $k => $v) {
 			if (count($fields) == $k + 1) {
-				$index_view_code .= "\t\t\t\t\t<td><?=\$data->" . $v->name . "?></td>\n";
-				$index_view_code .= "\t\t\t\t\t<td><a href='<?=base_url('" . $table . '/view/' . "'." . '$data->' . $primary_key . ");?>'>View</a></td>\n";
-				$index_view_code .= "\t\t\t\t\t<td><a href='<?=base_url('" . $table . '/edit/' . "'." . '$data->' . $primary_key . ");?>'>Edit</a></td>\n";
-				$index_view_code .= "\t\t\t\t\t<td><a data-url='<?=base_url('" . $table . '/delete/' . "'." . '$data->' . $primary_key . ");?>' href='javascript:void(0)' class='delete'>Delete</a></td>";
+				if ($v->name != 'created' && $v->name != 'modified') {
+					$index_view_code .= "\t\t\t\t\t<td><?=\$data->" . $v->name . "?></td>\n";
+					$index_view_code .= "\t\t\t\t\t<td><a href='<?=base_url('" . $table . '/view/' . "'." . '$data->' . $primary_key . ");?>'>View</a></td>\n";
+					$index_view_code .= "\t\t\t\t\t<td><a href='<?=base_url('" . $table . '/edit/' . "'." . '$data->' . $primary_key . ");?>'>Edit</a></td>\n";
+					$index_view_code .= "\t\t\t\t\t<td><a data-url='<?=base_url('" . $table . '/delete/' . "'." . '$data->' . $primary_key . ");?>' href='javascript:void(0)' class='delete'>Delete</a></td>";
+				} else {
+					$index_view_code .= "\t\t\t\t\t<td><?=date('Y-m-d-h:m',\$data->" . $v->name . ")?></td>\n";
+					$index_view_code .= "\t\t\t\t\t<td><a href='<?=base_url('" . $table . '/view/' . "'." . '$data->' . $primary_key . ");?>'>View</a></td>\n";
+					$index_view_code .= "\t\t\t\t\t<td><a href='<?=base_url('" . $table . '/edit/' . "'." . '$data->' . $primary_key . ");?>'>Edit</a></td>\n";
+					$index_view_code .= "\t\t\t\t\t<td><a data-url='<?=base_url('" . $table . '/delete/' . "'." . '$data->' . $primary_key . ");?>' href='javascript:void(0)' class='delete'>Delete</a></td>";
+				}
 			} else {
-				$index_view_code .= "\t\t\t\t\t<td><?=\$data->" . $v->name . "?></td>\n";
+				if ($v->name != 'created' && $v->name != 'modified') {
 
+					$index_view_code .= "\t\t\t\t\t<td><?=\$data->" . $v->name . "?></td>\n";
+				} else {
+					$index_view_code .= "\t\t\t\t\t<td><?=date('Y-m-d-h:m',\$data->" . $v->name . ")?></td>\n";
+				}
 			}
+
+
 		}
 
 		$index_view_code .= "
@@ -268,7 +322,9 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 	}
 
-	protected function generate_add_view($primary_key, $table, $fields) {
+	protected
+	function generate_add_view(
+		$primary_key, $table, $fields) {
 
 		$add_view_code = "
 <h3>Add " . $table . "</h3>
@@ -276,10 +332,8 @@ class " . ucfirst($table) . " extends MY_Controller{
 	<fieldset>
 		<?=form_open('" . $table . "/add')?>
 		<ul>\n\n";
-
 		foreach ($fields as $field) {
-			if ($field->primary_key != '1') {
-
+			if ($field->primary_key != '1' && $field->name != "created" && $field->name != 'modified') {
 				$add_view_code .= "\t\t\t<label>" . $field->name . "</label><?php echo form_error('" . $field->name . "'); ?>\n";
 				$add_view_code .= "\t\t\t<li><?=form_input('" . $field->name . "',set_value('" . $field->name . "'),\"placeholder='" . $field->name . "'\")?></li><br>\n\n";
 			}
@@ -297,7 +351,9 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 	}
 
-	protected function generate_view_view($primary_key, $table, $fields) {
+	protected
+	function generate_view_view(
+		$primary_key, $table, $fields) {
 
 		$view_view_code = "<h3>" . $table . "</h3>
 
@@ -316,7 +372,9 @@ class " . ucfirst($table) . " extends MY_Controller{
 		}
 	}
 
-	protected function generate_edit_view($primary_key, $table, $fields) {
+	protected
+	function generate_edit_view(
+		$primary_key, $table, $fields) {
 
 		$edit_view_code = "
 <h3>Add " . $table . "</h3>
@@ -326,8 +384,7 @@ class " . ucfirst($table) . " extends MY_Controller{
 		<ul>\n\n";
 
 		foreach ($fields as $field) {
-			if ($field->primary_key != '1') {
-
+			if ($field->primary_key != '1' && $field->name != 'created' && $field->name != 'modified') {
 				$edit_view_code .= "\t\t\t<label>" . $field->name . "</label><?php echo form_error('" . $field->name . "'); ?>\n";
 				$edit_view_code .= "\t\t\t<li><?=form_input('" . $field->name . "',\$data->$field->name)?></li><br>\n\n";
 			}
